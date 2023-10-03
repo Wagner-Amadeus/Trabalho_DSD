@@ -1,8 +1,4 @@
-import msvcrt
-import os
 import socket
-import threading
-
 from modules import *
 
 lista_de_clientes = []
@@ -30,10 +26,7 @@ def main():
         opcao_de_jogo = receber_mensagem_char_servidor_cliente(cliente)
         print(f"Opção numérica do cliente: {opcao_de_jogo}\n")
 
-
-
-        lista_de_clientes.append(((nome_cliente),(opcao_de_jogo)))
-  
+        lista_de_clientes.append(((nome_cliente),(opcao_de_jogo)))  
         print(f'Imprimindo a lista de {lista_de_clientes}')
 
         # ---------------------------------------------------------------- #
@@ -41,6 +34,7 @@ def main():
         palavra_secreta = sorteador_de_palavras()
         letras_descobertas = []
         pontos = 0
+        chave = False
 
         while fim_do_jogo(pontos, palavra_secreta):
             print(palavra_secreta)
@@ -51,19 +45,20 @@ def main():
 
             # A letra já foi testada anteriormente
             if (check_de_palavra(letra, letras_descobertas)):
-                enviar_mensagem_servidor_cliente(cliente, f"A letra {letra} já foi testada!")
+                enviar_mensagem_servidor_cliente(cliente, f"---> A letra {letra} já foi testada!\n\n")
                 
             # A letra está contida na palavra
             else:
                 if (check_de_letra(letra, palavra_secreta)):
                     pontos += contar_letras_na_palavra(letra, palavra_secreta)
-                    enviar_mensagem_servidor_cliente(cliente, 'ACERTOU!!') 
+                    enviar_mensagem_servidor_cliente(cliente, '---> ACERTOU!!\n\n') 
                 else:
                     # A letra não está contida na palavra
-                    enviar_mensagem_servidor_cliente(cliente, 'ERROU FEIO, ERROU RUDE !\n\n')
+                    enviar_mensagem_servidor_cliente(cliente, '---> ERROU FEIO, ERROU RUDE !\n\n')
                 letras_descobertas.append(letra)
         
-        print("Fim de Jogo!")
+        enviar_mensagem_servidor_cliente("Fim do jogo!")
+        servidor.close()
 
 
 
