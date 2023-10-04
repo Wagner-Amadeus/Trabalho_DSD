@@ -3,86 +3,71 @@ from modules import *
 
 lista_de_clientes = []
 
+host = 'localhost'      # Endereço IP do servidor
+port_tcp = 7777         # Porta do servidor
+port_udp = 8888         # Porta do servidor
 
-def main():
 
-    host = 'localhost'  # Endereço IP do servidor
-    port = 7777         # Porta do servidor
+servidor_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+servidor_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+try:
+    servidor_tcp.bind((host, port_tcp))
+    servidor_tcp.listen(4)
+    print("\nServidor TCP conectado com sucesso.")
+    print(f"Servidor TCP aguardando conexão em <<{host}:{port_tcp}>>...\n")
+except:
+    print("Não foi possível iniciar o servidor TCP")
 
-    try:
-        servidor.bind((host, port))
-        servidor.listen(2)
-        print("Servidor conectado com sucesso\n")
-        print(f"Servidor aguardando conexão em {host}:{port}...\n")
-    except:
-        return print("Não foi possível iniciar o servidor")
+try:
+    servidor_udp.bind((host, port_udp))
+    print("Servidor UDP ativado com sucesso\n\n")
+except:
+    print("Não foi possível iniciar o servidor UDP")
 
-    while True:
-        cliente, endereco = servidor.accept()
-        nome_cliente = receber_mensagem_string_servidor_cliente(cliente)
-        print(f"---> {nome_cliente} Acabou de se conectar ao servidor\n")
-        opcao_de_jogo = receber_mensagem_char_servidor_cliente(cliente)
-        print(f"Opção numérica do cliente: {opcao_de_jogo}\n")
 
-        lista_de_clientes.append(((nome_cliente),(opcao_de_jogo)))  
-        print(f'Imprimindo a lista de {lista_de_clientes}')
+cliente, endereco = servidor_tcp.accept()
+nome_cliente, player_addr = servidor_udp.recvfrom(1024)
+nome_cliente = nome_cliente.decode('utf-8')
 
-        # ---------------------------------------------------------------- #
-        # Inicio do jogo
-        palavra_secreta = sorteador_de_palavras()
-        letras_descobertas = []
-        pontos = 0
-        chave = False
+lista_de_clientes.append(cliente)
 
-        while fim_do_jogo(pontos, palavra_secreta):
-            print(palavra_secreta)
-            enviar_mensagem_servidor_cliente(cliente, revela_palavra(palavra_secreta, letras_descobertas))
-            enviar_mensagem_servidor_cliente(cliente, "\nEntre com uma letra: ")
-            letra = receber_mensagem_char_servidor_cliente(cliente)
-            print(f'A recebida pelo user foi {letra}')
+print(f"---> {nome_cliente} Acabou de se conectar ao servidor TCP\n")
 
-            # A letra já foi testada anteriormente
-            if (check_de_palavra(letra, letras_descobertas)):
-                enviar_mensagem_servidor_cliente(cliente, f"---> A letra {letra} já foi testada!\n\n")
-                
-            # A letra está contida na palavra
+def jogo(player=nome_cliente):
+    palavra_secreta = sorteador_de_palavras()
+    letras_descobertas = []
+    pontos = 0
+
+
+    while(fim_do_jogo(pontos, palavra_secreta)):
+        print(palavra_secreta)
+        cliente.send(str(revela_palavra(palavra_secreta, letras_descobertas)).encode())
+        cliente.send(str("\nEntre com uma letra: ").encode())
+        letra = cliente.recv(1).decode('utf-8')
+        print(f'A recebida por {player.upper()} foi "{letra}"\n')
+
+        # A letra já foi testada anteriormente #
+        if (check_de_palavra(letra, letras_descobertas)):
+            mensagem = f"---> A letra {letra} já foi testada!\n\n"
+            cliente.send(str(mensagem).encode())
+        
+        # A letra está contida na palavra
+        else:
+            # Acertou !
+            if (check_de_letra(letra, palavra_secreta)):
+                pontos += contar_letras_na_palavra(letra, palavra_secreta)
+                mensagem = "---> ACERTOU!!\n\n"
+                cliente.send(str(mensagem).encode())
+            # Errou !
             else:
-                if (check_de_letra(letra, palavra_secreta)):
-                    pontos += contar_letras_na_palavra(letra, palavra_secreta)
-                    enviar_mensagem_servidor_cliente(cliente, '---> ACERTOU!!\n\n') 
-                else:
-                    # A letra não está contida na palavra
-                    enviar_mensagem_servidor_cliente(cliente, '---> ERROU FEIO, ERROU RUDE !\n\n')
-                letras_descobertas.append(letra)
-        
-        enviar_mensagem_servidor_cliente("Fim do jogo!")
-        servidor.close()
+                mensagem = "---> ERROU FEIO, ERROU RUDE !\n\n"
+                cliente.send(str(mensagem).encode())
 
+            letras_descobertas.append(letra)
+    mensagem = "Fim do jogo!\n"
+    cliente.send(str(mensagem).encode())
+    servidor_tcp.close()
+    servidor_udp.close()
 
-
-            
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-
-
-
-main()
+jogo(nome_cliente)
