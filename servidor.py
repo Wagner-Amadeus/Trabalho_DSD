@@ -65,6 +65,7 @@ def jogo(player=nome_cliente):
                 cliente.send(str(mensagem).encode())
 
             letras_descobertas.append(letra)
+            
     mensagem = "Fim do jogo!\n"
     cliente.send(str(mensagem).encode())
     servidor_tcp.close()

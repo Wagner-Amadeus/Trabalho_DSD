@@ -24,6 +24,7 @@ def receiveMessages(cliente):
             print("Pressione <enter> para continuar...")
             cliente.close()
 
+
 def sendMessages(cliente):
     while True:
         try:
@@ -34,7 +35,7 @@ def sendMessages(cliente):
         
 def jogo():
     print("Iniciando modo jogo...\n")
-    cliente_tcp.connect(('localhost', 7777))
+    cliente_tcp.connect((host, 7777))
     thread_1 = threading.Thread(target=receiveMessages, args=[cliente_tcp])
     thread_2 = threading.Thread(target=sendMessages, args=[cliente_tcp])
     thread_1.start()
